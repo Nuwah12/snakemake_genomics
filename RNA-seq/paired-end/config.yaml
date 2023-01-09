@@ -1,0 +1,9 @@
+---
+samples: "samplesheet.csv"
+
+ChromNoPatch: "/mnt/data0/fdb/igenome/Homo_sapiens/Ensembl/GRCh37.75/Annotation/Genes/ChromNoPatch.bed" 
+gtf: "/mnt/data0/fdb/igenome/Homo_sapiens/Ensembl/GRCh37.75/Annotation/Genes/Homo_sapiens_GRCh37_75.gtf"
+chromSizes: "ChromInfo.txt"
+starIndex: "/mnt/data0/apps/pipelines/STAR/index/hg19"
+
+picard_path: "/mnt/data0/apps/picard/build/libs/"
