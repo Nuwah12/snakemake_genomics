@@ -1,0 +1,62 @@
+import os
+import pandas as pd
+from snakemake.utils import validate, min_version
+
+shell.executable("bash")
+
+configfile: "config.yml"
+localrules: all
+
+samples_df=pd.read_csv(config["sampleSheet"]).set_index("name", drop = False)
+samples_dict = samples_df.to_dict(orient='index')
+ALL_SAMPLES = samples_df.index.to_list()
+
+chromNoPatch = config["ChromNoPatch"]
+chromSizes = config["chromSizes"]
+blacklist = config["blacklist"]
+
+sig_val = config["significance_value"]
+
+if sig_val=="FDR":
+        thresh=config["FDR_threshold"]
+elif sig_val=="PVALUE":
+        thresh=config["PVAL_threshold"]
+
+rule all:
+	input:
+		expand("01.peaks/{sample}/{sample}_peaks.narrowPeak", sample=ALL_SAMPLES),
+		expand("01.peaks/{sample}/{sample}_peaks.xls", sample=ALL_SAMPLES),
+		expand("01.peaks/{sample}/{sample}_summits.bed", sample=ALL_SAMPLES),
+		expand("01.peaks/{sample}/{sample}_islandFiltered.bam", sample=ALL_SAMPLES)
+
+rule callPeaks:
+	input:
+		bam="00.bams/{sample}.noScaffold.nodup.bam"
+	output:
+		"01.peaks/{sample}/{sample}_peaks.narrowPeak",
+		"01.peaks/{sample}/{sample}_peaks.xls",
+		"01.peaks/{sample}/{sample}_summits.bed"
+	log: "01.peaks/{sample}/{sample}_peakCalling.log"
+	run:
+		if sig_val == 'PVALUE':
+			print("ATAC - using p-value")
+			shell("macs2 callpeak -t {input.bam} --nomodel --nolambda -n {wildcards.sample} -p {thresh} --bw=300 --keep-dup=1 --outdir 01.peaks/{wildcards.sample} &> {log}")
+		elif sig_val == 'FDR':
+			print("ATAC - using FDR")
+			shell("macs2 callpeak -t {input.bam} --nomodel --nolambda -n {wildcards.sample} -q {thresh} --bw=300 --keep-dup=1 --outdir 01.peaks/{wildcards.sample} &> {log}")			
+
+rule filterBamByIsland:
+	input:
+		narrowPeak = "01.peaks/{sample}/{sample}_peaks.narrowPeak",
+		ogBam = "00.bams/{sample}.noScaffold.nodup.bam"
+	output:
+		filtBam = "01.peaks/{sample}/{sample}_islandFiltered.bam"
+	log: "01.peaks/{sample}/{sample}_islandFilterBam.log"
+	shell:
+		"""
+		cut -f 1,2,3 {input.narrowPeak} | bedtools sort -i - | bedtools intersect -b - -a {input.ogBam} -wa | bedtools intersect -a - -b {blacklist} -v | samtools sort -m 15000000000 - -o {output.filtBam} &> {log}
+		"""
+
+
+
+
