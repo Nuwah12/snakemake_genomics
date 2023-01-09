@@ -2,8 +2,8 @@
 ### Noah Burget
 ### Last update: 1/9/23
 
-## RNA-seq
-# Single-end alignment
+# RNA-seq
+## Single-end alignment
 ```
 1. trim_galore 
     --fastqc
