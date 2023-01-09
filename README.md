@@ -50,7 +50,7 @@
     bedGraphToBigWig
 ```
 
-##Paired-end alignment
+## Paired-end alignment
 ```
 1. trim_galore 
     --fastqc
