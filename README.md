@@ -46,8 +46,8 @@
     Compute scaling factor:
       T = samtools view -c <BAM>
       FACTOR = 1000000 / T
-      bamToBed --> bed12ToBed6 --> genomeCoverageBed
-      bedGraphToBigWig
+    bamToBed --> bed12ToBed6 --> genomeCoverageBed
+    bedGraphToBigWig
 ```
 
 
