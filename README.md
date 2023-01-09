@@ -4,6 +4,7 @@
 
 ## RNA-seq
 # Single-end alignment
+```
 1. trim_galore 
     --fastqc
     -q 15
@@ -47,7 +48,7 @@
       FACTOR = 1000000 / T
       bamToBed --> bed12ToBed6 --> genomeCoverageBed
       bedGraphToBigWig
-
+```
 
 
 
