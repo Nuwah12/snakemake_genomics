@@ -1,0 +1,9 @@
+---
+samples: "samplesheet.csv"
+
+ChromNoPatch: "/mnt/data0/noah/refs/GRCh38/Annotation/Genes/ChromNoPatch.bed" #Fixed for argonauts - bed-style chromosome size file
+gtf: "/mnt/data0/noah/refs/GRCh38/Annotation/Genes/genes.gtf"
+chromSizes: "/mnt/data0/noah/refs/GRCh38/Annotation/Genes/ChromSizes_hg38_02.txt"
+bwaIndex: "/mnt/data0/noah/refs/GRCh38/Sequence/BWAIndex/genome.fa"
+
+picard_path: "/mnt/data0/apps/picard/build/libs/"
