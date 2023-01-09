@@ -1,0 +1,120 @@
+import os
+import pandas as pd 
+from snakemake.utils import validate, min_version
+
+shell.executable("bash")
+
+configfile: "config.yaml"
+localrules: all
+
+samples_df=pd.read_csv(config["samples"]).set_index("samples", drop = False)
+samples_dict = samples_df.to_dict(orient='index')
+
+ALL_SAMPLES = samples_df.index.to_list()
+PREFIX=expand(["{sample}"], sample=ALL_SAMPLES)
+chromNoPatch=config["ChromNoPatch"]
+picard=config["picard_path"]
+chromGTF=config["gtf"]
+chromSizes=config["chromSizes"]
+starIndex=config["starIndex"]
+
+rule all:
+	input:
+		expand(["01.fastqc/{sample}_trimmed.fq.gz"], sample=ALL_SAMPLES),
+                expand(["01.fastqc/{sample}_trimmed_fastqc.html"], sample=ALL_SAMPLES),
+		expand(["02.alignment/{sample}.bam"], sample=ALL_SAMPLES),
+                expand(["02.alignment/{sample}.noScaffold.bam.bai"], sample=ALL_SAMPLES),
+		expand(["02.alignment/{sample}.noScaffold.bam"], sample=ALL_SAMPLES),
+		expand(["02.alignment/{sample}.noScaffold.dupmark.bam"], sample=ALL_SAMPLES),
+		expand(["02.alignment/{sample}.noScaffold.nodup.bam"], sample=ALL_SAMPLES),
+		expand(["03.counts/{sample}.count"], sample=ALL_SAMPLES),
+		expand(["04.bigWigs/{sample}.noScaffold.nodup.bw"], sample=ALL_SAMPLES)
+
+rule fastqc:
+	input:
+		"00.fastq/{sample}.fastq.gz"
+	output:
+		"01.fastqc/{sample}_trimmed.fq.gz",
+		"01.fastqc/{sample}_trimmed_fastqc.html"
+	log: 
+		"01.fastqc/logs/{sample}.trimGalore.log"
+	resources:
+		mem = 2
+	message: "Performing FastQC"
+	shell:
+		""" 
+		trim_galore -q 15 --fastqc --phred33 --gzip --stringency 5 -e 0.1 --length 20 --illumina {input} -o 01.fastqc &> {log}
+		"""
+
+rule star_align_se:
+	input:		
+		fqc="01.fastqc/{sample}_trimmed.fq.gz"
+	output:		
+		bam="02.alignment/{sample}.bam"	
+	log:
+		"02.alignment/logs/{sample}.STAR-align.log"
+	message: "Aligning in SINGLE-END MODE with STAR"
+	shell:
+		"""
+		STAR --genomeDir {starIndex} --outFilterType BySJout --readFilesIn {input.fqc} --readFilesCommand zcat --outSAMattributes Standard --outFilterIntronMotifs RemoveNoncanonicalUnannotated --alignIntronMax 100000 --outSAMstrandField intronMotif --outFileNamePrefix 02.alignment/{PREFIX} --outSAMunmapped Within --chimSegmentMin 25 --chimJunctionOverhangMin 25 --outStd SAM | samtools view -bS - | samtools sort -o {output.bam} &> {log} 	
+		"""
+
+rule remove_scaffolds:
+	input:
+		rawbam="02.alignment/{sample}.bam"
+	output:
+		outbam="02.alignment/{sample}.noScaffold.bam",
+		bai="02.alignment/{sample}.noScaffold.bam.bai"
+	log:
+		"02.alignment/logs/{sample}.scaffoldRemove.log"
+	message: "Removing Scaffolds, sorting, and indexing BAM"
+	shell:
+		"""
+		samtools view -h -L {chromNoPatch} {input.rawbam} | samtools sort - -o {output.outbam} &> {log}
+		samtools index -b -o {output.bai} {output.outbam} &> {log}
+		"""
+
+rule remove_dups:
+	input:
+		noScaff_bam="02.alignment/{sample}.noScaffold.bam"
+	output:
+		dupmark_bam="02.alignment/{sample}.noScaffold.dupmark.bam",
+		metric="02.alignment/{sample}.dupmetric.bam",
+		finalBam="02.alignment/{sample}.noScaffold.nodup.bam",
+		finalBam_bai="02.alignment/{sample}.noScaffold.nodup.bam.bai"
+	log: 
+		"02.alignment/logs/{sample}.removeDups.log"
+	message: "Removing duplicates"
+	shell: 
+		"""
+		java -jar {picard}/picard.jar MarkDuplicates M={output.metric} O={output.dupmark_bam} I={input.noScaff_bam} REMOVE_DUPLICATES=false VALIDATION_STRINGENCY=SILENT &> {log}
+		samtools view -b -F 1540 {output.dupmark_bam} | samtools sort - -o {output.finalBam} &> {log}
+		samtools index -b -o {output.finalBam_bai} {output.finalBam} &> {log}
+		"""
+
+rule featureCount:
+	input:
+		finalBam="02.alignment/{sample}.noScaffold.nodup.bam"
+	output:
+		counts="03.counts/{sample}.count"
+	log:
+		"03.counts/logs/{sample}.featureCount.log"
+	message: "Counting reads over genes"
+	shell:
+		"""
+		featureCounts -t exon -g gene_id -s 1 -O -a {chromGTF} -o {output.counts} {input.finalBam} &> {log}
+		"""
+
+rule makeBigWig:
+	input:
+		finalBam="02.alignment/{sample}.noScaffold.nodup.bam"
+	output:
+		bw="04.bigWigs/{sample}.noScaffold.nodup.bw",
+		bedGraph=temp("04.bigWigs/{sample}.noScaffold.nodup.bg")
+	log:
+		"04.bigWigs/logs/{sample}.makeBigWig.log"
+	message: "Making BigWig for visualization"
+	shell:
+		"""
+		./make_bw.sh {input.finalBam} {chromSizes} {output.bedGraph} {output.bw} &> {log}
+		"""
