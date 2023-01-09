@@ -1,1 +1,2 @@
-# snakemake_genomics
+# Genomic Analysis pipelines with Snakemake
+### Noah Burget
