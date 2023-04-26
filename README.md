@@ -10,6 +10,7 @@
 * Samtools (http://www.htslib.org/download/)
 * Picard (https://broadinstitute.github.io/picard/)
 * Subread (https://subread.sourceforge.net/)
+* Pandas (https://pypi.org/project/pandas/)
 
 #### How to use:
 0. Determine whether your library is single-end or paired-end. Use the appropriate Snakemake file.
