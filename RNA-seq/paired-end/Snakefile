@@ -1,5 +1,6 @@
 import os
 import pandas as pd 
+import subprocess 
 from snakemake.utils import validate, min_version
 
 shell.executable("bash")
@@ -17,6 +18,10 @@ picard=config["picard_path"]
 chromGTF=config["gtf"]
 chromSizes=config["chromSizes"]
 starIndex=config["starIndex"]
+fastq_dir = config["fastq_dir"]
+
+### softlink to actual fastq location
+subprocess.run(["ln", "-s", "{}".format(fastq_dir), "00.fastq"])
 
 rule all:
 	input:
@@ -111,12 +116,15 @@ rule makeBigWig:
 	input:
 		finalBam="02.alignment/{sample}.noScaffold.nodup.bam"
 	output:
-		bw="04.bigWigs/{sample}.noScaffold.nodup.bw"
-	
+		bw="04.bigWigs/{sample}.noScaffold.nodup.bw",
+		bedGraph="04.bigWigs/{sample}.bg"	
 	log:
 		"04.bigWigs/logs/{sample}.makeBigWig.log"
 	message: "Making BigWig for visualization"
 	shell:
 		"""
-		./make_bw.sh {input.finalBam} {chromSizes} {output.bedGraph} {output.bw} &> {log}	
+		T=$(samtools view -c {input.finalBam}) 
+		FACTOR=`echo "scale=10; 1000000 / ${{T}}" | bc -l` 
+		bamToBed -i {input.finalBam} -bed12 | bed12ToBed6 -i stdin | genomeCoverageBed -bg -i - -g {chromSizes} -scale ${{FACTOR}} | sort -k1,1 -k2,2n > {output.bedGraph} 
+		bedGraphToBigWig {output.bedGraph} {chromSizes} {output.bw} 	
 		"""

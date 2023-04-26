@@ -116,5 +116,8 @@ rule makeBigWig:
 	message: "Making BigWig for visualization"
 	shell:
 		"""
-		./make_bw.sh {input.finalBam} {chromSizes} {output.bedGraph} {output.bw} &> {log}
+		T=$(samtools view -c {input.finalBam})
+                FACTOR=`echo "scale=10; 1000000 / ${{T}}" | bc -l`
+                bamToBed -i {input.finalBam} -bed12 | bed12ToBed6 -i stdin | genomeCoverageBed -bg -i - -g {chromSizes} -scale ${{FACTOR}} | sort -k1,1 -k2,2n > {output.bedGraph}
+                bedGraphToBigWig {output.bedGraph} {chromSizes} {output.bw} 
 		"""
