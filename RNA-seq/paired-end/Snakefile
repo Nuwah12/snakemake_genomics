@@ -19,7 +19,6 @@ chromGTF=config["gtf"]
 chromSizes=config["chromSizes"]
 starIndex=config["starIndex"]
 fastq_dir = config["fastq_dir"]
-<<<<<<< HEAD
 
 ### softlink to actual fastq location
 subprocess.run(["ln", "-s", "{}".format(fastq_dir), "00.fastq"])
