@@ -1,104 +1,26 @@
 # Genomic Analysis pipelines with Snakemake
 ### Noah Burget
-### Last update: 1/9/23
+### Last update: 4/26/23
 
-# RNA-seq
-## Single-end alignment
-```
-1. trim_galore 
-    --fastqc
-    -q 15
-    --phred33
-    --gzip
-    --stringency 5
-    -e 0.1
-    --length 20
-    --illumina
-    input = single-end fastq.gz
-2. STAR alignment
-    --outFilterType BySJout
-    --readFilesCommand zcat
-    --outSAMattributes Standard
-    --outFilterIntronMotifs RemoveNoncanonicalUnannotated
-    --alignIntronMax 100000
-    --outSAMstrandField intronMotif
-    --outSAMunmapped Within
-    --chimSegmentMin 25 
-    --chimJunctionOverhangMin 25 
-    --outStd SAM
-    input = trimmed fastq.gz
-3. Remove scaffolds
-    samtools view -h -L <chromScaffolds>
-    input = unfiltered BAM
-4. Picard MarkDuplicates (remove PCR duplicates)
-    REMOVE_DUPLICATES=false
-    VALIDATION_STRINGENCY=SILENT
-    samtools view b -F 1540 (filter out marked PCR duplocates)
-    input = BAM, no scaffolds
-5. featureCounts
-    -t exon
-    -g gene_id
-    -s 1
-    -O 
-    -a <.gtf>
-    input = BAM, no PCR dups, no scaffolds
-6. Make bigWig
-    Compute scaling factor:
-      T = samtools view -c <BAM>
-      FACTOR = 1000000 / T
-    bamToBed --> bed12ToBed6 --> genomeCoverageBed
-    bedGraphToBigWig
-```
+## Config parameters
+### All config parameters are located in `config.yml` - each pipeline has their own copy, and may have different parameters, so make sure you are using the correct file! 
+   * `samples`: Path to samplesheet
+   * `fastq_dir`: Path to directory containing all .fastq files to be aligned.
+   *  `ChromNoPatch`: Path to file containing chromosome sizes in a bed-style format (e.g. chr1 1 249250621), with every dequence/chromosome you want to map to
+   * `gtf`: Path to .gtf file for annotation being used
+   * `chromSizes`: Path to chromosome sizes file
+   * `starIndex`: Path to STAR index directory *(RNA-seq only!)*
+   * `bwaIndex`: Path to BWA index directory *(ATAC/ChIP-seq only!)*
+   * `picard_path`: Path to directory of picard jar file
 
-## Paired-end alignment
-```
-1. trim_galore 
-    --fastqc
-    -q 15
-    --phred33
-    --gzip
-    --stringency 5
-    -e 0.1
-    --length 20
-    --illumina
-    --paired
-    input = R1 fastq.gz, R2 fastq.gz
-2. STAR alignment
-    --outFilterType BySJout
-    --readFilesCommand zcat
-    --outSAMattributes Standard
-    --outFilterIntronMotifs RemoveNoncanonicalUnannotated
-    --alignIntronMax 100000
-    --outSAMstrandField intronMotif
-    --outSAMunmapped Within
-    --chimSegmentMin 25 
-    --chimJunctionOverhangMin 25 
-    --outStd SAM
-    input = trimmed R1 fastq.gz, trimmed R2 fastq.gz
-3. Remove scaffolds
-    samtools view -h -L <chromScaffolds>
-    input = unfiltered BAM
-4. Picard MarkDuplicates (remove PCR duplicates)
-    REMOVE_DUPLICATES=false
-    VALIDATION_STRINGENCY=SILENT
-    samtools view b -F 1540 (filter out marked PCR duplocates)
-    input = BAM, no scaffolds
-5. featureCounts
-    -p
-    -t exon
-    -g gene_id
-    -s 1
-    -O 
-    -a <.gtf>
-    input = BAM, no PCR dups, no scaffolds
-6. Make bigWig
-    Compute scaling factor:
-      T = samtools view -c <BAM>
-      FACTOR = 1000000 / T
-    bamToBed --> bed12ToBed6 --> genomeCoverageBed
-    bedGraphToBigWig
-```
+## Dependencies
+'x' indicates that the pipeline depends on this software
+| Software | RNA-seq | ChIP-seq | ATAC-seq |
+|----------|---------|----------|----------|
+|    STAR  |    x    |          |          |
+|    BWA   |         |      x   |     x    |
+| Samtools |    x    |  x       |      x   |
+|  Picard  |  x      | x        |      x   |
+|  Subread |   x     |  x       |   x      |
+| Pandas   |   x     |  x       |   x      |
 
-
-    
-    

@@ -19,6 +19,7 @@ chromGTF=config["gtf"]
 chromSizes=config["chromSizes"]
 starIndex=config["starIndex"]
 fastq_dir = config["fastq_dir"]
+<<<<<<< HEAD
 
 ### softlink to actual fastq location
 subprocess.run(["ln", "-s", "{}".format(fastq_dir), "00.fastq"])
@@ -37,8 +38,8 @@ rule all:
 
 rule fastqc:
 	input:
-		r1="00.fastq/{sample}_R1.fastq.gz",
-		r2="00.fastq/{sample}_R2.fastq.gz"
+		r1="{fastq_dir}/{sample}_R1.fastq.gz",
+		r2="{fastq_dir}/{sample}_R2.fastq.gz"
 	output:
 		trimmed_r1="01.fastqc/{sample}_R1_val_1.fq.gz",
 		trimmed_r2="01.fastqc/{sample}_R2_val_2.fq.gz"
