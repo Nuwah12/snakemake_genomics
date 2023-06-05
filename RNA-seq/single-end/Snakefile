@@ -13,7 +13,6 @@ samples_dict = samples_df.to_dict(orient='index')
 ALL_SAMPLES = samples_df.index.to_list()
 PREFIX=expand(["{sample}"], sample=ALL_SAMPLES)
 chromNoPatch=config["ChromNoPatch"]
-picard=config["picard_path"]
 chromGTF=config["gtf"]
 chromSizes=config["chromSizes"]
 starIndex=config["starIndex"]
@@ -87,7 +86,7 @@ rule remove_dups:
 	message: "Removing duplicates"
 	shell: 
 		"""
-		java -jar {picard}/picard.jar MarkDuplicates M={output.metric} O={output.dupmark_bam} I={input.noScaff_bam} REMOVE_DUPLICATES=false VALIDATION_STRINGENCY=SILENT &> {log}
+		picard MarkDuplicates M={output.metric} O={output.dupmark_bam} I={input.noScaff_bam} REMOVE_DUPLICATES=false VALIDATION_STRINGENCY=SILENT &> {log}
 		samtools view -b -F 1540 {output.dupmark_bam} | samtools sort - -o {output.finalBam} &> {log}
 		samtools index -b -o {output.finalBam_bai} {output.finalBam} &> {log}
 		"""
