@@ -14,19 +14,15 @@ samples_dict = samples_df.to_dict(orient='index')
 ALL_SAMPLES = samples_df.index.to_list()
 PREFIX=expand(["{sample}"], sample=ALL_SAMPLES)
 chromNoPatch=config["ChromNoPatch"]
-picard=config["picard_path"]
 chromGTF=config["gtf"]
 chromSizes=config["chromSizes"]
 starIndex=config["starIndex"]
-fastq_dir = config["fastq_dir"]
-
-### softlink to actual fastq location
-subprocess.run(["ln", "-s", "{}".format(fastq_dir), "00.fastq"])
+fq_suff=config["fastq_suffix"]
 
 rule all:
 	input:
-		expand(["01.fastqc/{sample}_R1_val_1.fq.gz"], sample=ALL_SAMPLES),
-                expand(["01.fastqc/{sample}_R2_val_2.fq.gz"], sample=ALL_SAMPLES),
+		expand(["01.fastqc/{sample}_R1%s_val_1.fq.gz" % fq_suff], sample=ALL_SAMPLES),
+                expand(["01.fastqc/{sample}_R2%s_val_2.fq.gz" % fq_suff], sample=ALL_SAMPLES),
 		expand(["02.alignment/{sample}.bam"], sample=ALL_SAMPLES),
                 expand(["02.alignment/{sample}.noScaffold.bam.bai"], sample=ALL_SAMPLES),
 		expand(["02.alignment/{sample}.noScaffold.bam"], sample=ALL_SAMPLES),
@@ -37,11 +33,11 @@ rule all:
 
 rule fastqc:
 	input:
-		r1="{fastq_dir}/{sample}_R1.fastq.gz",
-		r2="{fastq_dir}/{sample}_R2.fastq.gz"
+		r1="00.fastq/{sample}_R1%s.fastq.gz" % fq_suff,
+		r2="00.fastq/{sample}_R2%s.fastq.gz" % fq_suff
 	output:
-		trimmed_r1="01.fastqc/{sample}_R1_val_1.fq.gz",
-		trimmed_r2="01.fastqc/{sample}_R2_val_2.fq.gz"
+		trimmed_r1="01.fastqc/{sample}%s_R1_val_1.fq.gz" % fq_suff,
+		trimmed_r2="01.fastqc/{sample}%s_R2_val_2.fq.gz" % fq_suff
 	log: 
 		"01.fastqc/logs/{sample}.trimGalore.log"
 	resources:
@@ -54,8 +50,8 @@ rule fastqc:
 
 rule star_align_se:
 	input:		
-		r1="01.fastqc/{sample}_R1_val_1.fq.gz",
-		r2="01.fastqc/{sample}_R2_val_2.fq.gz"
+		r1="01.fastqc/{sample}_R1%s_val_1.fq.gz" % fq_suff,
+		r2="01.fastqc/{sample}_R2%s_val_2.fq.gz" % fq_suff
 	output:		
 		bam="02.alignment/{sample}.bam"
 	log:
@@ -78,7 +74,7 @@ rule remove_scaffolds:
 	shell:
 		"""
 		samtools view -h -L {chromNoPatch} {input.rawbam} | samtools sort - -o {output.outbam} &> {log}
-		samtools index -b -o {output.bai} {output.outbam} &> {log}
+		samtools index -b {output.outbam} {output.bai} &> {log}
 		"""
 
 rule remove_dups:
@@ -94,7 +90,7 @@ rule remove_dups:
 	message: "Removing duplicates"
 	shell: 
 		"""
-		java -jar {picard}/picard.jar MarkDuplicates M={output.metric} O={output.dupmark_bam} I={input.noScaff_bam} REMOVE_DUPLICATES=false VALIDATION_STRINGENCY=SILENT &> {log}
+		picard MarkDuplicates M={output.metric} O={output.dupmark_bam} I={input.noScaff_bam} REMOVE_DUPLICATES=false VALIDATION_STRINGENCY=SILENT &> {log}
 		samtools view -b -F 1540 {output.dupmark_bam} | samtools sort - -o {output.finalBam} &> {log}
 		samtools index -b -o {output.finalBam_bai} {output.finalBam} &> {log}
 		"""
