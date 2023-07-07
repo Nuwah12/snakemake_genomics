@@ -1,7 +1,15 @@
 # Genomic Analysis pipelines with Snakemake
 ## Input
-Fastq files should be placed within the `00.fastq` directory, in the same directory as the `Snakefile`. \
-All fastq files should be gzipped - i.e. have the extension `.fastq.gz` or `.fq.gz`, etc. This can be done by running `gzip <fastq>`.
+Fastq files should be placed within the `00.fastq` directory (make one if it does not exist), in the same directory as the `Snakefile`. \
+All fastq files should be gzipped - i.e. have the extension `.fastq.gz`. This can be done by running `gzip <fastq>`.
+
+## Sample sheet
+One all fastq files have been transferred to the `00.fastq` , the `utils/make_samplesheet.sh` utility script will generate the sample sheet. \
+If running a paired-end pipeline (*including ChIP-seq and ATAC-seq*), pass `-p` to the script. \
+```
+mv /path/to/fastq/*.fastq.gz 00.fastq
+./make_samplesheet.sh <-p>
+```
 
 ## Config parameters
 ### All config parameters are located in `config.yml` - each pipeline has its own copy, and may have different parameters, so make sure you are using the correct file! 
