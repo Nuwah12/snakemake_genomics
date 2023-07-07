@@ -1,0 +1,8 @@
+---
+fastq_suffix: "_fastq-data" # File name AFTER _R1/_R2 and BEFORE .fastq.gz
+
+samples: "samplesheet.csv"
+ChromNoPatch: "/mnt/data0/noah/references/hg38/Chrom_NoPatch_hg38.txt"
+gtf: "/mnt/data0/noah/references/hg38/gtf/Homo_sapiens.GRCh38.109.gtf"
+chromSizes: "/mnt/data0/noah/references/hg38/ChromSizes_hg38_ordered.txt"
+bwaIndex: ""
