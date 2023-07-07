@@ -1,7 +1,4 @@
 # Genomic Analysis pipelines with Snakemake
-### Noah Burget
-### Last update: 4/26/23
-
 ## Input
 Fastq files should be placed within the `00.fastq` directory, in the same directory as the `Snakefile`. \
 All fastq files should be gzipped - i.e. have the extension `.fastq.gz` or `.fq.gz`, etc. This can be done by running `gzip <fastq>`.
