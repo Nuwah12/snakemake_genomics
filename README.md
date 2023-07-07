@@ -1,9 +1,18 @@
 # Genomic Analysis pipelines with Snakemake
-### Noah Burget
-### Last update: 4/26/23
+## Input
+Fastq files should be placed within the `00.fastq` directory (make one if it does not exist), in the same directory as the `Snakefile`. \
+All fastq files should be gzipped - i.e. have the extension `.fastq.gz`. This can be done by running `gzip <fastq>`.
+
+## Sample sheet
+One all fastq files have been transferred to the `00.fastq` , the `utils/make_samplesheet.sh` utility script will generate the sample sheet. \
+If running a paired-end pipeline (*including ChIP-seq and ATAC-seq*), pass `-p` to the script. \
+```
+mv /path/to/fastq/*.fastq.gz 00.fastq
+./make_samplesheet.sh <-p>
+```
 
 ## Config parameters
-### All config parameters are located in `config.yml` - each pipeline has their own copy, and may have different parameters, so make sure you are using the correct file! 
+### All config parameters are located in `config.yml` - each pipeline has its own copy, and may have different parameters, so make sure you are using the correct file! 
    * `samples`: Path to samplesheet
    * `fastq_dir`: Path to directory containing all .fastq files to be aligned.
    *  `ChromNoPatch`: Path to file containing chromosome sizes in a bed-style format (e.g. chr1 1 249250621), with every dequence/chromosome you want to map to
