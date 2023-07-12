@@ -5,4 +5,10 @@ samples: "samplesheet.csv"
 ChromNoPatch: "/mnt/data0/noah/references/hg38/Chrom_NoPatch_hg38.txt"
 gtf: "/mnt/data0/noah/references/hg38/gtf/Homo_sapiens.GRCh38.109.gtf"
 chromSizes: "/mnt/data0/noah/references/hg38/ChromSizes_hg38_ordered.txt"
-bwaIndex: ""
+bwaIndex: "/mnt/data0/noah/references/hg38/hg38_fa/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
+
+peakInput: "none" #Control file for peak calling - 'none' if no ctrl file
+significance_value: "FDR" #'FDR' or 'PVALUE'
+FDR_threshold: 1e-5
+PVAL_threshold: 0.01
+
