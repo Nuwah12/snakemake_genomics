@@ -20,7 +20,6 @@ mv /path/to/fastq/*.fastq.gz 00.fastq
    * `chromSizes`: Path to chromosome sizes file
    * `starIndex`: Path to STAR index directory *(RNA-seq only!)*
    * `bwaIndex`: Path to BWA index directory *(ATAC/ChIP-seq only!)*
-   * `picard_path`: Path to directory of picard jar file
 
 ## Dependencies
 'x' indicates that the pipeline depends on this software
