@@ -69,9 +69,9 @@ rule bwa_align_pe:
 	message: "Aligning in PAIRED-END MODE with BWA"
 	shell:
 		"""
-		bwa aln -q 5 -l 32 -k 2 -t 10 {bwaIndex} {input.fqc1} > {output.sai1} &> {log}
-		bwa aln -q 5 -l 32 -k 2 -t 10 {bwaIndex} {input.fqc2} > {output.sai2} &> {log}
-		bwa sampe -P -o 1000000 -r '@RG\\tID:{wildcards.sample}\\tSM:{wildcards.sample}' {bwaIndex} {output.sai1} {output.sai2} {input.fqc1} {input.fqc2} | samtools view -Su - | samtools sort -m 30000000000 - -o {output.bam} &> {log} 
+		bwa aln -q 5 -l 32 -k 2 -t 10 {bwaIndex} {input.fqc1} > {output.sai1} 
+		bwa aln -q 5 -l 32 -k 2 -t 10 {bwaIndex} {input.fqc2} > {output.sai2} 
+		bwa sampe -P -o 1000000 -r '@RG\\tID:{wildcards.sample}\\tSM:{wildcards.sample}' {bwaIndex} {output.sai1} {output.sai2} {input.fqc1} {input.fqc2} | samtools view -Su - | samtools sort -m 30000000000 - -o {output.bam}
 		"""
 
 rule remove_scaffolds:
@@ -112,17 +112,16 @@ rule make_bigWig:
 		finalBam="02.alignment/{sample}.noScaffold.nodup.bam"
 	output:
 		bw="04.bigWigs/{sample}.noScaffold.nodup.bw",
-                bedGraph=temp("04.bigWigs/{sample}.noScaffold.nodup.bg")
+                bedGraph="04.bigWigs/{sample}.noScaffold.nodup.bg"
 	log:
                 "04.bigWigs/logs/{sample}.makeBigWig.log"
 	message: "Making BigWig for visualization"
 	shell:
                 """
-                T=$(samtools view -c input.finalBam)
+                T=$(samtools view -c {input.finalBam})
 		FACTOR=`echo "scale=10; 1000000/ ${{T}}" | bc -l`
 		bamToBed -i {input.finalBam} -bed12 | bed12ToBed6 -i stdin | genomeCoverageBed -bg -i - -g {chromSizes} -scale ${{FACTOR}} | sort -k1,1 -k2,2n > {output.bedGraph} 
-		bedGraphToBigWig {output.bedGraph} {chromSizes} {output.bw}  
-		rm {output.bedGraph}
+		bedGraphToBigWig {output.bedGraph} {chromSizes} {output.bw}
                 """
 
 rule callPeaks:
@@ -137,16 +136,16 @@ rule callPeaks:
                 print("input = {}".format(ctrl))
                 if ctrl.lower() == 'none' and sig_val == 'PVALUE':
                         print("No control, using p-value")
-                        shell("macs2 callpeak -t {input.bam} -n {wildcards.sample} -p {thresh} --bw=300 --keep-dup=1 --outdir 01.peaks/{wildcards.sample} &> log")
+                        shell("macs2 callpeak -t {input.bam} -n {wildcards.sample} -p {thresh} --bw=300 --keep-dup=1 --outdir 05.peaks/{wildcards.sample} &> log")
                 elif ctrl.lower() == 'none' and sig_val == 'FDR':
                         print("No control, using FDR")
-                        shell("macs2 callpeak -t {input.bam} -n {wildcards.sample} -q {thresh} --bw=300 --keep-dup=1 --outdir 01.peaks/{wildcards.sample} &> {log}")
+                        shell("macs2 callpeak -t {input.bam} -n {wildcards.sample} -q {thresh} --bw=300 --keep-dup=1 --outdir 05.peaks/{wildcards.sample} &> {log}")
                 elif ctrl.lower() != 'none' and sig_val == 'PVALUE':
                         print("With control file, using p-value")
-                        shell("macs2 callpeak -t {input.bam} -c {ctrl} -n {wildcards.sample} -p {thresh} --bw=300 --keep-dup=1 --outdir 01.peaks/{wildcards.sample} &> {log}")
+                        shell("macs2 callpeak -t {input.bam} -c {ctrl} -n {wildcards.sample} -p {thresh} --bw=300 --keep-dup=1 --outdir 05.peaks/{wildcards.sample} &> {log}")
                 elif ctrl.lower() != 'none' and sig_val == 'FDR':
                         print("With control file, using FDR")
-                        shell("macs2 callpeak -t {input.bam} -c {ctrl} -n {wildcards.sample} -q {thresh} --bw=300 --keep-dup=1 --outdir 01.peaks/{wildcards.sample} &> {log}")
+                        shell("macs2 callpeak -t {input.bam} -c {ctrl} -n {wildcards.sample} -q {thresh} --bw=300 --keep-dup=1 --outdir 05.peaks/{wildcards.sample} &> {log}")
 
 
 	
