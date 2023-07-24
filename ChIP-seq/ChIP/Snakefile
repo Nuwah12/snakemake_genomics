@@ -15,6 +15,7 @@ PREFIX=expand(["{sample}"], sample=ALL_SAMPLES)
 chromNoPatch=config["ChromNoPatch"]
 chromGTF=config["gtf"]
 chromSizes=config["chromSizes"]
+blacklist=config["blacklist"]
 bwaIndex=config["bwaIndex"]
 fq_suff=config["fastq_suffix"]
 
@@ -36,6 +37,7 @@ rule all:
 		expand(["02.alignment/{sample}.noScaffold.bam"], sample=ALL_SAMPLES),
 		expand(["02.alignment/{sample}.noScaffold.dupmark.bam"], sample=ALL_SAMPLES),
 		expand(["02.alignment/{sample}.noScaffold.nodup.bam"], sample=ALL_SAMPLES),
+		expand(["02.alignment/{sample}.noScaffold.nodup.noBlack.bam"],sample=ALL_SAMPLES),
 		expand(["04.bigWigs/{sample}.noScaffold.nodup.bw"], sample=ALL_SAMPLES),
 		expand(["05.peaks/{sample}/{sample}_peaks.narrowPeak"], sample=ALL_SAMPLES),
                 expand(["05.peaks/{sample}/{sample}_peaks.xls"], sample=ALL_SAMPLES),
@@ -82,7 +84,7 @@ rule remove_scaffolds:
 		bai="02.alignment/{sample}.noScaffold.bam.bai"
 	log:
 		"02.alignment/logs/{sample}.scaffoldRemove.log"
-	message: "Removing Scaffolds, sorting, and indexing BAM"
+	message: "Filtering step 1: Removing Scaffolds, sorting, and indexing BAM"
 	shell:
 		"""
 		samtools view -h -L {chromNoPatch} {input.rawbam} | samtools sort - -o {output.outbam} &> {log}
@@ -95,21 +97,34 @@ rule remove_dups:
 	output:
 		dupmark_bam="02.alignment/{sample}.noScaffold.dupmark.bam",
 		metric="02.alignment/{sample}.dupmetric.bam",
-		finalBam="02.alignment/{sample}.noScaffold.nodup.bam",
+		bamNoDup="02.alignment/{sample}.noScaffold.nodup.bam",
 		finalBam_bai="02.alignment/{sample}.noScaffold.nodup.bam.bai"
 	log: 
 		"02.alignment/logs/{sample}.removeDups.log"
-	message: "Removing duplicates"
+	message: "Filtering step 2: Removing duplicates"
 	shell: 
 		"""
 		picard MarkDuplicates M={output.metric} O={output.dupmark_bam} I={input.noScaff_bam} REMOVE_DUPLICATES=false VALIDATION_STRINGENCY=SILENT &> {log}
-		samtools view -b -F 1540 {output.dupmark_bam} | samtools sort - -o {output.finalBam} &> {log}
-		samtools index -b {output.finalBam} {output.finalBam_bai} &> {log}
+		samtools view -b -F 1540 {output.dupmark_bam} | samtools sort - -o {output.bamNoDup} &> {log}
+		samtools index -b {output.bamNoDup} {output.finalBam_bai} &> {log}
+		"""
+
+rule remove_blacklist:
+	input:
+		noDup="02.alignment/{sample}.noScaffold.nodup.bam"
+	output:
+		noBlack="02.alignment/{sample}.noScaffold.nodup.noBlack.bam",
+		noBlack_bai="02.alignment/{sample}.noScaffold.nodup.noBlack.bai"
+	message: "Filtering step 3: Removing blacklisted regions"
+	shell:
+		"""
+		bedtools intersect -abam {input.noDup} -b {blacklist} > {output.noBlack}
+		samtools index -b {output.noBlack} {output.noBlack_bai}
 		"""
 
 rule make_bigWig:
 	input:
-		finalBam="02.alignment/{sample}.noScaffold.nodup.bam"
+		finalBam="02.alignment/{sample}.noScaffold.nodup.noBlack.bam"
 	output:
 		bw="04.bigWigs/{sample}.noScaffold.nodup.bw",
                 bedGraph="04.bigWigs/{sample}.noScaffold.nodup.bg"
