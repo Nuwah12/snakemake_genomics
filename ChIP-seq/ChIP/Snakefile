@@ -118,7 +118,7 @@ rule remove_blacklist:
 	message: "Filtering step 3: Removing blacklisted regions"
 	shell:
 		"""
-		bedtools intersect -abam {input.noDup} -b {blacklist} > {output.noBlack}
+		bedtools intersect -abam {input.noDup} -b {blacklist} -v > {output.noBlack}
 		samtools index -b {output.noBlack} {output.noBlack_bai}
 		"""
 
